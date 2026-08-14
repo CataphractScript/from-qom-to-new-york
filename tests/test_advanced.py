@@ -1,8 +1,9 @@
-"""Unit tests for Round 5 Innovations (A*, Bidirectional Dijkstra, Dynamic Congestion)."""
+"""Unit tests for Round 5 Innovations (A*, Bidirectional Dijkstra, Dynamic Congestion, ALT)."""
 
 import pytest
 
 from from_qom_to_new_york.algorithms.advanced import (
+    ALTAlgorithm,
     astar_search,
     bidirectional_dijkstra,
     compare_dijkstra_vs_astar,
@@ -56,3 +57,16 @@ def test_dynamic_congestion_routing():
     assert res.static_shortest_path[0] == src
     assert res.dynamic_optimal_path[0] == src
     assert res.dynamic_cost_minutes >= res.static_cost_minutes
+
+
+def test_alt_algorithm():
+    g = build_qom_metro_graph()
+    src = "Terminal Mosaferbari Qom"
+    dst = "Masjed Moghaddas Jamkaran"
+
+    dijkstra_res = dijkstra(g, source=src, target=dst, metric="distance")
+    alt_engine = ALTAlgorithm(g, metric="distance")
+    alt_res = alt_engine.search(src, dst)
+
+    assert abs(alt_res.total_cost - dijkstra_res.total_cost) < 1e-6
+    assert alt_res.path == dijkstra_res.path

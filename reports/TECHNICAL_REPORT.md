@@ -90,6 +90,9 @@ In urban rail transit networks, topology is inherently **sparse and planar**. Fo
 * **T3.4 Stochastic Passenger Arrival Simulation:**
   - Models passenger arrivals via Poisson process ($\lambda$) and ticket turnstile processing via exponential service distributions ($M/M/c$ queuing system).
   - Measures average queue delays, gate utilization, and peak-hour congestion bottlenecks.
+* **T3.5 Staff-to-Shift Bipartite Matching (Hopcroft-Karp):**
+  - Bipartite matching assigning qualified personnel to station shifts.
+  - Time: $\mathcal{O}(E \sqrt{V})$ (outperforming standard Ford-Fulkerson $\mathcal{O}(V \cdot E)$). Space: $\mathcal{O}(V + E)$.
 
 ---
 
@@ -129,6 +132,10 @@ In urban rail transit networks, topology is inherently **sparse and planar**. Fo
   - Real-time travel delay function:
     $$T_e = T_0(e) \cdot \left(1 + \alpha \cdot \left(\frac{\text{Flow}_e}{\text{Capacity}_e}\right)^\beta\right)$$
   - Dynamically diverts transit flow around congested hubs during peak hours.
+* **Innovation 4: ALT (A*, Landmarks, Triangle Inequality):**
+  - Precomputes landmark metric embeddings; derives consistent triangle-inequality bounds $h(u) = \max_{\ell} |d(u, \ell) - d(t, \ell)|$.
+* **Innovation 5: Hopcroft-Karp Matching for Staff Allocation (T3.5):**
+  - Maximum cardinality bipartite matching in $\mathcal{O}(E \sqrt{V})$.
 
 ---
 
@@ -149,6 +156,7 @@ In urban rail transit networks, topology is inherently **sparse and planar**. Fo
 | **R3** | T3.2 | Train Dispatch Min-Heap | $\mathcal{O}(\log N)$ push/pop | $\mathcal{O}(N)$ | Complete |
 | **R3** | T3.3 | Quickselect Rank Statistics | Expected $\mathcal{O}(N)$ | $\mathcal{O}(1)$ | Complete |
 | **R3** | T3.4 | Passenger Queue Simulation | $\mathcal{O}(P \log C)$ ($P$ passengers) | $\mathcal{O}(P)$ | Complete |
+| **R3** | T3.5 | Hopcroft-Karp Staff Matching | $\mathcal{O}(E \sqrt{V})$ | $\mathcal{O}(V + E)$ | Complete |
 | **R4** | T4.1 | Floyd-Warshall All-Pairs | $\mathcal{O}(V^3)$ | $\mathcal{O}(V^2)$ | Complete |
 | **R4** | T4.2 | Edmonds-Karp Max-Flow | $\mathcal{O}(V \cdot E^2)$ | $\mathcal{O}(V + E)$ | Complete |
 | **R4** | T4.3 | Tarjan Cut Vertices/Bridges | $\mathcal{O}(V + E)$ | $\mathcal{O}(V)$ | Complete |
@@ -158,10 +166,11 @@ In urban rail transit networks, topology is inherently **sparse and planar**. Fo
 | **R5** | Inno 1 | A* Search (Haversine) | $\mathcal{O}(E \log V)$ | $\mathcal{O}(V)$ | Complete |
 | **R5** | Inno 2 | Bidirectional Dijkstra | $\mathcal{O}((V + E)\log V)$ | $\mathcal{O}(V)$ | Complete |
 | **R5** | Inno 3 | Dynamic BPR Congestion | $\mathcal{O}((V + E)\log V)$ | $\mathcal{O}(V)$ | Complete |
+| **R5** | Inno 4 | ALT Landmark Routing | $\mathcal{O}(E \log V)$ | $\mathcal{O}(V)$ | Complete |
 
 ---
 
 ## 5. Verification & Testing Summary
-- **Test Suite:** 31 automated unit and integration tests covering all algorithmic edge cases, negative cycle scenarios, disjoint set invariants, min-cut bottlenecks, and service layers.
-- **Pass Rate:** 100% (31/31 passed in 0.05 seconds).
+- **Test Suite:** 34 automated unit and integration tests covering all algorithmic edge cases, negative cycle scenarios, disjoint set invariants, min-cut bottlenecks, bipartite staff matching, and service layers.
+- **Pass Rate:** 100% (34/34 passed in 0.11 seconds).
 - **Execution Standards:** PEP 8 compliant, strictly typed, fully English documented.

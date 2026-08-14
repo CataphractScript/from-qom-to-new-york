@@ -23,6 +23,7 @@ from from_qom_to_new_york.cli.commands import (
     cmd_schedule,
     cmd_search,
     cmd_simulate,
+    cmd_staff,
 )
 from from_qom_to_new_york.cli.formatters import (
     bold,
@@ -43,7 +44,7 @@ def interactive_menu(system: MetroSystem) -> None:
         print("Select a module to run:")
         print(f"  {bold('1.')} System & Graph Overview (|V|=20, |E|=21)")
         print(f"  {bold('2.')} T1.2: Check Station Connectivity (BFS / DFS)")
-        print(f"  {bold('3.')} T1.3 / R5: Shortest Path Routing (Dijkstra, A*, Bi-Dijkstra, Dynamic)")
+        print(f"  {bold('3.')} T1.3 / R5: Shortest Path Routing (Dijkstra, A*, Bi-Dijkstra, ALT, Dynamic)")
         print(f"  {bold('4.')} T2.1 / T2.2: Minimum Spanning Tree (Kruskal vs Prim)")
         print(f"  {bold('5.')} T2.3: Express Line DAG Routing (Topological Sort)")
         print(f"  {bold('6.')} T2.4: Negative Cycle & Incentive Detector (Bellman-Ford)")
@@ -51,16 +52,17 @@ def interactive_menu(system: MetroSystem) -> None:
         print(f"  {bold('8.')} T3.2: Train Dispatch Priority Queue (Min-Heap)")
         print(f"  {bold('9.')} T3.3: Transit Ridership Analytics & Quickselect")
         print(f"  {bold('10.')} T3.4: Passenger Arrival & Gate Queue Simulation")
-        print(f"  {bold('11.')} T4.1: Floyd-Warshall All-Pairs Distance Matrix")
-        print(f"  {bold('12.')} T4.2: Maximum Flow & Min-Cut Capacity Analysis (Edmonds-Karp)")
-        print(f"  {bold('13.')} T4.3: Critical Infrastructure (Articulation Points & Bridges)")
-        print(f"  {bold('14.')} T4.4: Emergency Response Team Deployment (Dominating Set)")
-        print(f"  {bold('15.')} T4.5 / T4.6: Fuzzy Station Name Search (Levenshtein)")
-        print(f"  {bold('16.')} Round 5: Algorithmic Benchmarks & Exploration Comparison")
+        print(f"  {bold('11.')} T3.5 / R5: Staff Shift Allocation (Hopcroft-Karp Bipartite Matching)")
+        print(f"  {bold('12.')} T4.1: Floyd-Warshall All-Pairs Distance Matrix")
+        print(f"  {bold('13.')} T4.2: Maximum Flow & Min-Cut Capacity Analysis (Edmonds-Karp)")
+        print(f"  {bold('14.')} T4.3: Critical Infrastructure (Articulation Points & Bridges)")
+        print(f"  {bold('15.')} T4.4: Emergency Response Team Deployment (Dominating Set)")
+        print(f"  {bold('16.')} T4.5 / T4.6: Fuzzy Station Name Search (Levenshtein)")
+        print(f"  {bold('17.')} Round 5: Algorithmic Benchmarks & Exploration Comparison")
         print(f"  {bold('0.')} Exit")
 
         try:
-            choice = input(f"\n{yellow('Enter choice [0-16]: ')}").strip()
+            choice = input(f"\n{yellow('Enter choice [0-17]: ')}").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting.")
             break
@@ -81,7 +83,7 @@ def interactive_menu(system: MetroSystem) -> None:
             src = input("Source station [Terminal Mosaferbari Qom]: ").strip() or "Terminal Mosaferbari Qom"
             dst = input("Destination station [Masjed Moghaddas Jamkaran]: ").strip() or "Masjed Moghaddas Jamkaran"
             metric = input("Metric [distance/time]: ").strip() or "distance"
-            algo = input("Algorithm [dijkstra/astar/bidirectional/dynamic/floyd]: ").strip() or "dijkstra"
+            algo = input("Algorithm [dijkstra/astar/bidirectional/alt/dynamic/floyd]: ").strip() or "dijkstra"
             ns = argparse.Namespace(source=src, target=dst, metric=metric, algo=algo)
             cmd_route(system, ns)
         elif choice == "4":
@@ -121,26 +123,29 @@ def interactive_menu(system: MetroSystem) -> None:
             ns = argparse.Namespace(duration=dur, multiplier=peak)
             cmd_simulate(system, ns)
         elif choice == "11":
+            ns = argparse.Namespace()
+            cmd_staff(system, ns)
+        elif choice == "12":
             metric = input("Metric [distance/time]: ").strip() or "distance"
             ns = argparse.Namespace(metric=metric)
             cmd_floyd(system, ns)
-        elif choice == "12":
+        elif choice == "13":
             src = input("Source station [Terminal Mosaferbari Qom]: ").strip() or "Terminal Mosaferbari Qom"
             dst = input("Sink station [Masjed Moghaddas Jamkaran]: ").strip() or "Masjed Moghaddas Jamkaran"
             ns = argparse.Namespace(source=src, target=dst)
             cmd_maxflow(system, ns)
-        elif choice == "13":
+        elif choice == "14":
             ns = argparse.Namespace()
             cmd_critical(system, ns)
-        elif choice == "14":
+        elif choice == "15":
             exact = input("Solve with exact branch & bound? [y/N]: ").strip().lower() == "y"
             ns = argparse.Namespace(exact=exact)
             cmd_emergency(system, ns)
-        elif choice == "15":
+        elif choice == "16":
             query = input("Search query [e.g. motahari, pardisn, jamkarn]: ").strip() or "motahari"
             ns = argparse.Namespace(query=query, top_k=5)
             cmd_search(system, ns)
-        elif choice == "16":
+        elif choice == "17":
             ns = argparse.Namespace()
             cmd_benchmark(system, ns)
         else:
@@ -171,7 +176,7 @@ def build_cli_parser() -> argparse.ArgumentParser:
     p_route.add_argument("--source", "-s", type=str, default="Terminal Mosaferbari Qom")
     p_route.add_argument("--target", "-t", type=str, default="Masjed Moghaddas Jamkaran")
     p_route.add_argument("--metric", choices=["distance", "time"], default="distance")
-    p_route.add_argument("--algo", choices=["dijkstra", "astar", "bidirectional", "dynamic", "floyd"], default="dijkstra")
+    p_route.add_argument("--algo", choices=["dijkstra", "astar", "bidirectional", "alt", "dynamic", "floyd"], default="dijkstra")
 
     # mst
     p_mst = subparsers.add_parser("mst", help="Compute Minimum Spanning Tree (Kruskal/Prim)")
@@ -205,6 +210,9 @@ def build_cli_parser() -> argparse.ArgumentParser:
     p_sim = subparsers.add_parser("simulate", help="Stochastic passenger arrival simulation")
     p_sim.add_argument("--duration", "-d", type=float, default=60.0, help="Simulation duration in minutes")
     p_sim.add_argument("--multiplier", "-m", type=float, default=1.0, help="Traffic load multiplier")
+
+    # staff
+    subparsers.add_parser("staff", help="Staff-to-shift matching via Hopcroft-Karp (T3.5)")
 
     # floyd
     p_fl = subparsers.add_parser("floyd", help="Floyd-Warshall all-pairs distance matrix")
@@ -257,6 +265,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "dispatch": cmd_dispatch,
         "analytics": cmd_analytics,
         "simulate": cmd_simulate,
+        "staff": cmd_staff,
         "floyd": cmd_floyd,
         "maxflow": cmd_maxflow,
         "critical": cmd_critical,

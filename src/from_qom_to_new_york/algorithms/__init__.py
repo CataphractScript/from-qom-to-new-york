@@ -1,6 +1,7 @@
 """Algorithms library for the Qom transit optimization system."""
 
 from from_qom_to_new_york.algorithms.advanced import (
+    ALTAlgorithm,
     AStarResult,
     CongestionRoutingResult,
     SearchComparisonResult,
@@ -24,6 +25,13 @@ from from_qom_to_new_york.algorithms.connectivity import (
     find_articulation_points_and_bridges,
 )
 from from_qom_to_new_york.algorithms.flow import FlowResult, edmonds_karp_max_flow
+from from_qom_to_new_york.algorithms.matching import (
+    HopcroftKarp,
+    MatchingResult,
+    ShiftSlot,
+    StaffMember,
+    match_staff_to_shifts,
+)
 from from_qom_to_new_york.algorithms.mst import (
     MSTComparison,
     MSTResult,
@@ -98,6 +106,12 @@ __all__ = [
     # Priority Queue
     "Train",
     "TrainPriorityQueue",
+    # Matching (Hopcroft-Karp / T3.5)
+    "StaffMember",
+    "ShiftSlot",
+    "MatchingResult",
+    "HopcroftKarp",
+    "match_staff_to_shifts",
     # String
     "FuzzyMatchResult",
     "levenshtein_distance",
@@ -118,6 +132,7 @@ __all__ = [
     "AStarResult",
     "SearchComparisonResult",
     "CongestionRoutingResult",
+    "ALTAlgorithm",
     "astar_search",
     "compare_dijkstra_vs_astar",
     "bidirectional_dijkstra",

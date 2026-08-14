@@ -23,11 +23,11 @@
 **UrbanPulse Dynamics** is a smart city transit optimization enterprise based in New York City. Commissioned by the Municipality of Qom, this project implements the algorithmic architecture for Qom's rapid rail transit network.
 
 The platform provides a unified system for:
-- **Graph Modeling & Spatial Search** (BFS, DFS, Dijkstra, A*, Bidirectional Dijkstra)
+- **Graph Modeling & Spatial Search** (BFS, DFS, Dijkstra, A*, Bidirectional Dijkstra, ALT)
 - **Infrastructure Design & Cost Minimization** (Kruskal with Union-Find, Prim, Express DAG, Bellman-Ford)
-- **Daily Metro Operations** (Platform Interval Scheduling, Min-Heap Train Dispatch, Quickselect Traffic Analytics, Stochastic Queuing Simulation)
+- **Daily Metro Operations** (Platform Interval Scheduling, Min-Heap Train Dispatch, Quickselect Traffic Analytics, Stochastic Queuing Simulation, Hopcroft-Karp Staff Allocation)
 - **Network Resilience & Capacity** (Edmonds-Karp Max-Flow, Min-Cut Bottlenecks, Tarjan Articulation Points & Bridges, Dominating Set Emergency Deployment, Levenshtein Fuzzy Search)
-- **Advanced Innovations** (A* Heuristics, Dynamic BPR Congestion Routing)
+- **Advanced Innovations** (A* Heuristics, ALT Landmarks, Dynamic BPR Congestion Routing)
 
 ---
 
@@ -58,22 +58,23 @@ from-qom-to-new-york/
 │       │   ├── connectivity.py         # Tarjan Cut-Vertices (Articulation Points) & Bridges
 │       │   ├── scheduling.py           # Interval Scheduling (Greedy EFT & Weighted DP)
 │       │   ├── priority.py             # Min-Heap Priority Queue for Train Dispatch
+│       │   ├── matching.py             # Hopcroft-Karp Maximum Bipartite Staff Matching (T3.5)
 │       │   ├── analytics.py            # Quickselect Rank Statistics & Traffic Analytics
 │       │   ├── simulation.py           # Stochastic Passenger Queue & Turnstile Simulation
 │       │   ├── string.py               # Levenshtein Distance & Token-Level Fuzzy Search
 │       │   ├── approximation.py        # Emergency Placement (Dominating Set: Greedy vs Exact)
-│       │   └── advanced.py             # A*, Bidirectional Dijkstra, Dynamic Congestion Routing
+│       │   └── advanced.py             # A*, ALT, Bidirectional Dijkstra, Dynamic Congestion Routing
 │       ├── services/
 │       │   ├── routing_service.py      # High-level pathfinding & navigation
 │       │   ├── infrastructure_service.py # Network design, MST, DAG, Negative cycles
-│       │   ├── operations_service.py   # Daily dispatch, platform scheduling, simulation
+│       │   ├── operations_service.py   # Daily dispatch, platform scheduling, simulation, staff
 │       │   ├── analysis_service.py     # Diagnostics, resilience, max-flow, emergency teams
 │       │   └── metro_system.py         # Central Facade unifying all services
 │       └── cli/
 │           ├── app.py                  # Subcommand parser & interactive menu loop
 │           ├── commands.py             # Subcommand handlers
 │           └── formatters.py           # ASCII tables, colored output, path visualizer
-├── tests/                              # Comprehensive test suite (31 unit/integration tests)
+├── tests/                              # Comprehensive test suite (34 unit/integration tests)
 │   ├── test_graph.py
 │   ├── test_search.py
 │   ├── test_shortest_path.py
@@ -82,6 +83,7 @@ from-qom-to-new-york/
 │   ├── test_connectivity.py
 │   ├── test_scheduling.py
 │   ├── test_priority.py
+│   ├── test_matching.py
 │   ├── test_string.py
 │   ├── test_approximation.py
 │   ├── test_advanced.py
@@ -127,7 +129,7 @@ python3 main.py
 | :--- | :--- | :--- |
 | **System Info** | `python3 main.py info` | Displays all 20 stations, coordinates, and 21 track connections |
 | **Connectivity** | `python3 main.py connectivity -s "Qaleh Kamkar" -t "Jamkaran" -m bfs` | Checks reachability via BFS or DFS |
-| **Shortest Route** | `python3 main.py route -s "Terminal" -t "Jamkaran" --metric distance --algo astar` | Computes shortest path (Dijkstra, A*, Bidirectional, Dynamic) |
+| **Shortest Route** | `python3 main.py route -s "Terminal" -t "Jamkaran" --metric distance --algo astar` | Computes shortest path (Dijkstra, A*, ALT, Bidirectional, Dynamic) |
 | **MST Optimization** | `python3 main.py mst --algo compare --metric distance` | Compares Kruskal (with Union-Find) vs Prim |
 | **Express Line DAG** | `python3 main.py express -s "Terminal" -t "Jamkaran"` | Computes shortest route on one-way DAG in $\mathcal{O}(V + E)$ |
 | **Negative Cycles** | `python3 main.py bellman-ford -s "Terminal" -t "Jamkaran" [--negative-test]` | Runs Bellman-Ford and detects negative loops |
@@ -135,6 +137,7 @@ python3 main.py
 | **Train Dispatch** | `python3 main.py dispatch` | Inspects and pops highest priority train from Min-Heap |
 | **Traffic Analytics** | `python3 main.py analytics -k 5` | Finds $k$-th busiest station using Quickselect $\mathcal{O}(N)$ |
 | **Queue Simulation** | `python3 main.py simulate -d 60 -m 1.5` | Simulates passenger arrivals at turnstiles |
+| **Staff Allocation** | `python3 main.py staff` | Allocates personnel shifts via Hopcroft-Karp $\mathcal{O}(E \sqrt{V})$ |
 | **All-Pairs Matrix** | `python3 main.py floyd --metric distance` | Pre-computes Floyd-Warshall $20 \times 20$ distance matrix |
 | **Max-Flow / Min-Cut** | `python3 main.py maxflow -s "Terminal" -t "Jamkaran"` | Calculates peak passenger throughput & bottleneck cut |
 | **Resilience Analysis**| `python3 main.py critical` | Finds Articulation Points and Bridges via Tarjan's DFS |
@@ -161,6 +164,7 @@ python3 main.py
 | **R3** | T3.2 | Train Dispatch Queue | $\mathcal{O}(\log N)$ push/pop | $\mathcal{O}(N)$ | Indexed Binary Min-Heap |
 | **R3** | T3.3 | Quickselect Rank Stats | Expected $\mathcal{O}(N)$ | $\mathcal{O}(1)$ | In-place Partitioning |
 | **R3** | T3.4 | Passenger Gate Queue | $\mathcal{O}(P \log C)$ | $\mathcal{O}(P)$ | Discrete Event / $M/M/c$ Model |
+| **R3** | T3.5 | Hopcroft-Karp Matching | $\mathcal{O}(E \sqrt{V})$ | $\mathcal{O}(V + E)$ | Bipartite Adjacency List |
 | **R4** | T4.1 | Floyd-Warshall All-Pairs | $\mathcal{O}(V^3)$ | $\mathcal{O}(V^2)$ | 2D Distance & Next Matrices |
 | **R4** | T4.2 | Edmonds-Karp Max-Flow | $\mathcal{O}(V \cdot E^2)$ | $\mathcal{O}(V + E)$ | Residual Adjacency Matrix |
 | **R4** | T4.3 | Tarjan's DFS Resilience | $\mathcal{O}(V + E)$ | $\mathcal{O}(V)$ | Discovery Times & Low-Links |
@@ -170,12 +174,13 @@ python3 main.py
 | **R5** | Inno 1 | A* Search (Haversine) | $\mathcal{O}(E \log V)$ | $\mathcal{O}(V)$ | Min-Heap + Coordinate Heuristic |
 | **R5** | Inno 2 | Bidirectional Dijkstra | $\mathcal{O}((V + E)\log V)$ | $\mathcal{O}(V)$ | Dual Min-Heaps ($Q_F, Q_B$) |
 | **R5** | Inno 3 | Dynamic BPR Congestion | $\mathcal{O}((V + E)\log V)$ | $\mathcal{O}(V)$ | Volume-Delay Function |
+| **R5** | Inno 4 | ALT Landmark Routing | $\mathcal{O}(E \log V)$ | $\mathcal{O}(V)$ | Precomputed Distances + Triangle Ineq |
 
 ---
 
 ## 🧪 Running Unit & Integration Tests
 
-The test suite contains **31 comprehensive unit and integration tests** verifying correctness, asymptotic constraints, negative cycle handling, and edge cases.
+The test suite contains **34 comprehensive unit and integration tests** verifying correctness, asymptotic constraints, negative cycle handling, and edge cases.
 
 ```bash
 pytest -v
@@ -183,7 +188,7 @@ pytest -v
 
 Expected output:
 ```text
-============================== 31 passed in 0.05s ==============================
+============================== 34 passed in 0.11s ==============================
 ```
 
 ---
@@ -196,7 +201,7 @@ Expected output:
    - Services (`services/`) orchestrate domain logic.
    - CLI (`cli/`) handles user interaction and formatting.
 2. **Open/Closed Principle (OCP):**
-   - New routing algorithms (e.g. Contraction Hierarchies, ALT) can be introduced without modifying existing Dijkstra or A* code.
+   - New routing algorithms (e.g. ALT, Contraction Hierarchies) can be introduced without modifying existing Dijkstra or A* code.
 3. **Liskov Substitution & Interface Segregation:**
    - Graph traversal protocols work interchangeably on directed, undirected, and residual subgraphs.
 4. **Dependency Inversion Principle (DIP):**
