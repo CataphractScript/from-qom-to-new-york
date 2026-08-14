@@ -6,7 +6,10 @@ import argparse
 import sys
 from typing import Optional
 
-from from_qom_to_new_york.algorithms.advanced import compare_dijkstra_vs_astar
+from from_qom_to_new_york.algorithms.advanced import (
+    ALTAlgorithm,
+    compare_dijkstra_vs_astar,
+)
 from from_qom_to_new_york.algorithms.approximation import (
     exact_minimum_dominating_set,
     greedy_dominating_set,
@@ -91,7 +94,7 @@ def cmd_connectivity(system: MetroSystem, args: argparse.Namespace) -> None:
 
 
 def cmd_route(system: MetroSystem, args: argparse.Namespace) -> None:
-    """T1.3 & Round 5: Find shortest path using Dijkstra, A*, Bidirectional Dijkstra, or Floyd."""
+    """T1.3 & Round 5: Find shortest path using Dijkstra, A*, Bidirectional Dijkstra, ALT, or Floyd."""
     src = args.source or "Terminal Mosaferbari Qom"
     dst = args.target or "Masjed Moghaddas Jamkaran"
     metric = args.metric.lower()
@@ -102,7 +105,6 @@ def cmd_route(system: MetroSystem, args: argparse.Namespace) -> None:
     unit = "km" if metric == "distance" else ("minutes" if metric == "time" else "units")
 
     if algo == "dynamic":
-        # Demonstrate dynamic congestion re-routing
         flows = {
             ("Meydan Motahari", "Haram Motahhar Hazrat Masoumeh"): 8800.0,
             ("Meydan Motahari", "Bimarestan Nekouei"): 5200.0,
@@ -114,8 +116,11 @@ def cmd_route(system: MetroSystem, args: argparse.Namespace) -> None:
         print(f"Dynamic Congested Cost: {bold(res_cong.dynamic_cost_minutes)} minutes")
         print(f"Benefit: {green(res_cong.congestion_avoidance_benefit)}")
         return
-
-    res = system.routing.find_shortest_path(src, dst, metric=metric, algorithm=algo)
+    elif algo == "alt":
+        alt_engine = ALTAlgorithm(system.graph, metric=metric)
+        res = alt_engine.search(src, dst)
+    else:
+        res = system.routing.find_shortest_path(src, dst, metric=metric, algorithm=algo)
 
     if res.path:
         print(f"\n{green('✔ Route Found Successfully!')}")
@@ -321,6 +326,29 @@ def cmd_simulate(system: MetroSystem, args: argparse.Namespace) -> None:
         print(f"  • {r}")
 
 
+def cmd_staff(system: MetroSystem, args: argparse.Namespace) -> None:
+    """T3.5 / Round 5: Hopcroft-Karp Maximum Bipartite Matching for Staff Shift Allocation."""
+    print_banner("T3.5 / Round 5: Staff Shift Allocation (Hopcroft-Karp)", "Maximum Cardinality Bipartite Matching in O(E * sqrt(V))")
+
+    res = system.operations.allocate_staff_shifts()
+
+    print(f"Shifts Assigned: {bold(green(res.total_matched))} / {len(res.matches) + len(res.unfilled_shifts)}")
+    print(f"Staff Shift Coverage: {bold(f'{res.coverage_ratio:.1f}%')}")
+
+    print_section("Assigned Personnel to Station Shifts")
+    headers = ["Staff ID", "Employee Name", "Role", "Assigned Station", "Shift Window"]
+    rows = [
+        [st.staff_id, st.name, st.role, sh.station_name, sh.time_window]
+        for st, sh in res.matches
+    ]
+    print(format_table(headers, rows))
+
+    if res.unfilled_shifts:
+        print_section("Unfilled Shift Slots")
+        for sh in res.unfilled_shifts:
+            print(f"  • {red(sh.shift_id)}: {sh.station_name} ({sh.required_role}) - {sh.time_window}")
+
+
 def cmd_floyd(system: MetroSystem, args: argparse.Namespace) -> None:
     """T4.1: Floyd-Warshall All-Pairs Shortest Path Matrix."""
     metric = args.metric.lower()
@@ -463,3 +491,8 @@ def cmd_benchmark(system: MetroSystem, args: argparse.Namespace) -> None:
     print(f"  • Exact Global Optimum: {bold(green(exact_res.team_count))} teams")
     gap = greedy_res.team_count - exact_res.team_count
     print(f"  • Empirical Optimality Gap: {bold(green('0 (Exact match!)') if gap == 0 else f'{gap} team(s)')}")
+
+    print_section("4. Staff Shift Allocation (Hopcroft-Karp)")
+    match_res = system.operations.allocate_staff_shifts()
+    print(f"  • Matched Shift Positions: {bold(green(match_res.total_matched))} / {len(match_res.matches)}")
+    print(f"  • Complexity: {bold('O(E * sqrt(V))')}")

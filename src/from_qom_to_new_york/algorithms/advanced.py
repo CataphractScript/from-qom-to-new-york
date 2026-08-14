@@ -380,3 +380,47 @@ def dynamic_congestion_aware_dijkstra(
         congestion_avoidance_benefit=benefit_msg,
         edge_congestions=congestions,
     )
+
+
+class ALTAlgorithm:
+    """ALT Algorithm: A*, Landmarks, and Triangle Inequality.
+
+    Heuristic lower bounds are derived using precalculated distances to a subset of landmark vertices L:
+        h(u) = max_{l in L} max( d(u, l) - d(target, l), d(l, target) - d(l, u) )
+    By the Triangle Inequality, h(u) <= d(u, target), guaranteeing admissibility and consistency.
+    """
+
+    def __init__(self, graph: Graph, landmarks: Optional[List[str]] = None, metric: MetricType = "distance") -> None:
+        self.graph = graph
+        self.metric = metric
+        # Default landmarks placed at network periphery (North, South, East, West)
+        self.landmarks = landmarks or [
+            "Terminal Mosaferbari Qom",
+            "Masjed Moghaddas Jamkaran",
+            "Boostan Fadak",
+            "Pardisan",
+        ]
+        # Precompute distances from and to each landmark
+        self.dist_from_landmark: Dict[str, Dict[str, float]] = {}
+        for landmark in self.landmarks:
+            if self.graph.has_station(landmark):
+                res = dijkstra(self.graph, source=landmark, metric=metric)
+                self.dist_from_landmark[landmark] = res.distances
+
+    def get_heuristic(self, u: str, target: str) -> float:
+        """Compute landmark-based admissible heuristic using triangle inequality."""
+        h_max = 0.0
+        for l in self.dist_from_landmark:
+            d_u_l = self.dist_from_landmark[l].get(u, float("inf"))
+            d_t_l = self.dist_from_landmark[l].get(target, float("inf"))
+            if d_u_l < float("inf") and d_t_l < float("inf"):
+                # Triangle inequality: d(u, t) >= |d(u, l) - d(t, l)|
+                h_max = max(h_max, abs(d_u_l - d_t_l))
+        return h_max
+
+    def search(self, source: str, target: str) -> AStarResult:
+        """Run A* search guided by ALT landmark heuristic."""
+        def alt_h(u_st: Station, v_st: Station) -> float:
+            return self.get_heuristic(u_st.name, v_st.name)
+
+        return astar_search(self.graph, source=source, target=target, metric=self.metric, heuristic_fn=alt_h)

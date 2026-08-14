@@ -1,4 +1,4 @@
-"""Metro Operations, Train Dispatch, Platform Scheduling, and Simulation Service."""
+"""Metro Operations, Train Dispatch, Platform Scheduling, Staff Allocation, and Simulation Service."""
 
 from __future__ import annotations
 
@@ -7,6 +7,12 @@ from typing import Dict, List, Optional
 from from_qom_to_new_york.algorithms.analytics import (
     AnalyticsSummary,
     compute_operational_analytics,
+)
+from from_qom_to_new_york.algorithms.matching import (
+    MatchingResult,
+    ShiftSlot,
+    StaffMember,
+    match_staff_to_shifts,
 )
 from from_qom_to_new_york.algorithms.priority import Train, TrainPriorityQueue
 from from_qom_to_new_york.algorithms.scheduling import (
@@ -24,7 +30,7 @@ from from_qom_to_new_york.core.graph import Graph
 
 
 class OperationsService:
-    """Manages daily transit operations, dispatch queues, scheduling, and traffic simulations."""
+    """Manages daily transit operations, dispatch queues, scheduling, staff shifts, and traffic simulations."""
 
     def __init__(self, graph: Graph) -> None:
         self._graph = graph
@@ -152,3 +158,40 @@ class OperationsService:
             "Bimarestan Nekouei": 9.0 * peak_multiplier,
         }
         return self._simulator.simulate_network(base_rates, duration_minutes=duration_minutes)
+
+    # --- T3.5 / Round 5: Staff Shift Bipartite Matching (Hopcroft-Karp) ---
+    def allocate_staff_shifts(
+        self,
+        custom_staff: Optional[List[StaffMember]] = None,
+        custom_shifts: Optional[List[ShiftSlot]] = None,
+    ) -> MatchingResult:
+        """Assign metro personnel to station shifts using the Hopcroft-Karp algorithm in O(E * sqrt(V))."""
+        staff = custom_staff or self.generate_sample_staff()
+        shifts = custom_shifts or self.generate_sample_shifts()
+        return match_staff_to_shifts(staff, shifts)
+
+    def generate_sample_staff(self) -> List[StaffMember]:
+        """Generate realistic sample workforce for Qom Metro shift assignment."""
+        return [
+            StaffMember("EMP-01", "Ali Rezaei", "Station Master", ["Haram Motahhar Hazrat Masoumeh", "Meydan Motahari"]),
+            StaffMember("EMP-02", "Hossein Moradi", "Station Master", ["Terminal Mosaferbari Qom", "Qaleh Kamkar"]),
+            StaffMember("EMP-03", "Mehdi Kazemi", "Train Driver", ["Meydan Motahari", "Masjed Moghaddas Jamkaran"]),
+            StaffMember("EMP-04", "Sadegh Ahmadi", "Train Driver", ["Terminal Mosaferbari Qom", "Pardisan"]),
+            StaffMember("EMP-05", "Reza Hosseini", "Security Chief", ["Haram Motahhar Hazrat Masoumeh", "Railway Station Qom"]),
+            StaffMember("EMP-06", "Mohammad Jafari", "Security Chief", ["Masjed Moghaddas Jamkaran", "Pardisan"]),
+            StaffMember("EMP-07", "Hassan Taghavi", "Maintenance Lead", ["Niroogah", "Meydan Motahari"]),
+            StaffMember("EMP-08", "Vahid Ebrahimi", "Maintenance Lead", ["Qaleh Kamkar", "Bimarestan Nekouei"]),
+        ]
+
+    def generate_sample_shifts(self) -> List[ShiftSlot]:
+        """Generate station shift requirements for Qom Metro daily operation."""
+        return [
+            ShiftSlot("SH-101", "Haram Motahhar Hazrat Masoumeh", "Station Master", "Morning (06:00-14:00)"),
+            ShiftSlot("SH-102", "Terminal Mosaferbari Qom", "Station Master", "Morning (06:00-14:00)"),
+            ShiftSlot("SH-103", "Meydan Motahari", "Train Driver", "Peak Morning (07:00-15:00)"),
+            ShiftSlot("SH-104", "Pardisan", "Train Driver", "Peak Morning (07:00-15:00)"),
+            ShiftSlot("SH-105", "Haram Motahhar Hazrat Masoumeh", "Security Chief", "All-Day (08:00-16:00)"),
+            ShiftSlot("SH-106", "Masjed Moghaddas Jamkaran", "Security Chief", "Evening (14:00-22:00)"),
+            ShiftSlot("SH-107", "Niroogah", "Maintenance Lead", "Morning Inspection (06:00-14:00)"),
+            ShiftSlot("SH-108", "Qaleh Kamkar", "Maintenance Lead", "Night Maintenance (22:00-06:00)"),
+        ]
